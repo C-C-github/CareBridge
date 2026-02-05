@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        
+        <div class="col-lg-8">
+            
+            <div class="card border-0 shadow-lg mb-5" style="border-radius: 12px; overflow: hidden;">
+                <div class="card-header bg-primary text-white p-4">
+                    <h4 class="fw-bold mb-0"><i class="fa-solid fa-user-pen me-2"></i> Edit Profile Details</h4>
+                </div>
+                <div class="card-body p-5">
+                    <form method="POST" enctype="multipart/form-data" id="profileForm">
+                        {% csrf_token %}
+                        
+                        <div class="text-center mb-5 position-relative">
+                            <div class="position-relative d-inline-block">
+                                <img id="avatarPreview" 
+                                     src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=0D6EFD&color=fff&size=150{% endif %}" 
+                                     class="rounded-circle border border-4 border-white shadow" 
+                                     width="150" height="150" 
+                                     style="object-fit: cover;">
+                                
+                                <button type="button" class="btn btn-danger btn-sm rounded-circle position-absolute top-0 end-0 shadow" 
+                                        onclick="deletePhoto()" title="Delete Photo" id="deleteBtn" 
+                                        {% if not user.profile_picture %}style="display:none;"{% endif %}>
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+
+                                <button type="button" class="btn btn-dark btn-sm rounded-circle position-absolute bottom-0 end-0 mb-2 me-2 shadow" 
+                                        onclick="openCamera()" title="Take Photo">
+                                    <i class="fa-solid fa-camera"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <label class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                                    <i class="fa-solid fa-upload me-2"></i> Upload New Photo
+                                    <input type="file" name="profile_picture" class="d-none" id="id_profile_picture" onchange="previewImage(this)">
+                                </label>
+                                <input type="hidden" name="webcam_image" id="webcam_image_data">
+                                <input type="hidden" name="delete_image" id="delete_image_flag" value="false">
+                            </div>
+                            <p class="text-muted small mt-2">Allowed: JPG, PNG. Max size: 2MB.</p>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">First Name</label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Last Name</label>
+                                {{ form.last_name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Phone Number</label>
+                                {{ form.phone_number }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Email (Read-Only)</label>
+                                <input type="text" class="form-control bg-light" value="{{ user.email }}" readonly>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Address</label>
+                                {{ form.address }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn btn-primary px-5 py-2 rounded-pill fw-bold shadow-sm">
+                                Save Profile Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                <div class="card-header bg-dark text-white p-4">
+                    <h5 class="fw-bold mb-0"><i class="fa-solid fa-shield-halved me-2"></i> Security Settings</h5>
+                </div>
+                <div class="card-body p-5">
+                    
+                    <div id="emailSection">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Registered Email</label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control bg-light" value="{{ user.email }}" readonly>
+                            <button class="btn btn-warning fw-bold" type="button" id="sendOtpBtn" onclick="sendOtp()">
+                                Send Verification Code
+                            </button>
+                        </div>
+                        <small class="text-success d-none" id="otpSentMsg"><i class="fa-solid fa-check-circle"></i> OTP sent successfully! Check your inbox.</small>
+                        <small class="text-danger d-none" id="otpErrorMsg"><i class="fa-solid fa-triangle-exclamation"></i> Error sending email. Check server logs.</small>
+                    </div>
+
+                    <div id="otpSection" class="mt-4 d-none">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Enter Verification Code</label>
+                        <div class="input-group mb-3">
+                            <input type="text" id="otpInput" class="form-control letter-spacing-2" placeholder="000000" maxlength="6">
+                            <button class="btn btn-success fw-bold" type="button" onclick="verifyOtp()">
+                                Verify & Unlock
+                            </button>
+                        </div>
+                        <div id="otpFeedback" class="small"></div>
+                    </div>
+
+                    <div id="passwordSection" class="mt-4 opacity-50" style="pointer-events: none;">
+                        <form method="POST" action="{% url 'staff_password_reset_confirm' %}" id="passwordForm"> 
+                            {% csrf_token %}
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-uppercase">New Password</label>
+                                    <div class="input-group">
+                                        <input type="password" name="new_password" id="newPassword" class="form-control" disabled onkeyup="checkStrength()">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('newPassword')">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 5px;">
+                                        <div class="progress-bar bg-danger" id="strengthBar" style="width: 0%"></div>
+                                    </div>
+                                    <small class="text-muted" id="strengthText">Strength: Weak</small>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-uppercase">Confirm Password</label>
+                                    <div class="input-group">
+                                        <input type="password" name="confirm_password" id="confirmPassword" class="form-control" disabled>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirmPassword')">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 p-3 bg-light rounded border">
+                                <p class="small fw-bold mb-2">Password Requirements:</p>
+                                <ul class="small text-muted mb-0 ps-3">
+                                    <li id="req-len" class="text-danger"><i class="fa-solid fa-circle-xmark"></i> At least 8 characters</li>
+                                    <li id="req-num" class="text-danger"><i class="fa-solid fa-circle-xmark"></i> At least 1 number</li>
+                                    <li id="req-spec" class="text-danger"><i class="fa-solid fa-circle-xmark"></i> At least 1 special character (@, #, $, etc.)</li>
+                                </ul>
+                            </div>
+
+                            <div class="mt-4 text-end">
+                                <button type="submit" class="btn btn-danger px-4 rounded-pill fw-bold" id="savePassBtn" disabled>
+                                    Update Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Take Profile Photo</h5>
+                <button type="button" class="btn-close" onclick="closeCamera()"></button>
+            </div>
+            <div class="modal-body text-center p-0 bg-dark position-relative">
+                <video id="video" width="100%" autoplay style="display:block;"></video>
+                <canvas id="canvas" style="display:none;"></canvas>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary rounded-pill" onclick="closeCamera()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-lg rounded-circle shadow" onclick="capturePhoto()">
+                    <i class="fa-solid fa-camera fa-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. IMAGE PREVIEW & DELETE ---
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('avatarPreview').src = e.target.result;
+                document.getElementById('deleteBtn').style.display = 'block'; 
+                document.getElementById('delete_image_flag').value = 'false';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function deletePhoto() {
+        let defaultUrl = "https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=0D6EFD&color=fff&size=150";
+        document.getElementById('avatarPreview').src = defaultUrl;
+        document.getElementById('delete_image_flag').value = 'true';
+        document.getElementById('id_profile_picture').value = ""; 
+        document.getElementById('webcam_image_data').value = "";  
+        document.getElementById('deleteBtn').style.display = 'none';
+    }
+
+    // --- 2. WEBCAM LOGIC (PRIVACY FOCUSED) ---
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let stream = null;
+    let cameraModal = null;
+
+    function openCamera() {
+        cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+        cameraModal.show();
+        
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(s) {
+                stream = s;
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(function(err) {
+                alert("Camera access denied.");
+                closeCamera();
+            });
+    }
+
+    function closeCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop()); // STOP CAMERA STREAM
+            stream = null;
+            video.srcObject = null;
+        }
+        if(cameraModal) {
+            let modalEl = document.getElementById('cameraModal');
+            let modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if(modalInstance) modalInstance.hide();
+        }
+    }
+
+    function capturePhoto() {
+        if (!stream) return;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        let dataURL = canvas.toDataURL('image/jpeg');
+        
+        document.getElementById('avatarPreview').src = dataURL;
+        document.getElementById('webcam_image_data').value = dataURL;
+        document.getElementById('delete_image_flag').value = 'false';
+        document.getElementById('deleteBtn').style.display = 'block';
+
+        closeCamera();
+    }
+
+    // --- 3. SECURITY FLOW (OTP & PASSWORD) ---
+    function sendOtp() {
+        let btn = document.getElementById('sendOtpBtn');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+        btn.disabled = true;
+
+        // Use Django URL tag to fix path errors
+        fetch("{% url 'send_security_otp' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Server Error");
+            }
+            return response.json();
+        })
+        .then(data => {
+            if(data.status === 'success') {
+                document.getElementById('otpSentMsg').classList.remove('d-none');
+                document.getElementById('otpErrorMsg').classList.add('d-none');
+                document.getElementById('otpSection').classList.remove('d-none');
+                btn.innerHTML = 'Code Sent';
+            } else {
+                throw new Error("Failed to send");
+            }
+        })
+        .catch(err => { 
+            console.error(err); 
+            document.getElementById('otpErrorMsg').classList.remove('d-none');
+            btn.disabled = false;
+            btn.innerHTML = 'Send Verification Code';
+        });
+    }
+
+    function verifyOtp() {
+        let otp = document.getElementById('otpInput').value;
+        let feedback = document.getElementById('otpFeedback');
+
+        fetch("{% url 'verify_security_otp' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ otp: otp })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                feedback.innerHTML = '<span class="text-success fw-bold"><i class="fa-solid fa-check"></i> Verified!</span>';
+                
+                // UNLOCK
+                let passSection = document.getElementById('passwordSection');
+                passSection.style.opacity = "1";
+                passSection.style.pointerEvents = "auto";
+                document.getElementById('newPassword').disabled = false;
+                document.getElementById('confirmPassword').disabled = false;
+                document.getElementById('savePassBtn').disabled = false;
+                
+                setTimeout(() => {
+                    document.getElementById('otpSection').style.display = 'none';
+                    document.getElementById('emailSection').style.display = 'none';
+                }, 1000);
+            } else {
+                feedback.innerHTML = '<span class="text-danger fw-bold">Invalid OTP.</span>';
+            }
+        });
+    }
+
+    // --- Password UI Helpers ---
+    function togglePassword(fieldId) {
+        let field = document.getElementById(fieldId);
+        let icon = field.nextElementSibling.querySelector('i');
+        if (field.type === "password") {
+            field.type = "text";
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            field.type = "password";
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    function checkStrength() {
+        let password = document.getElementById('newPassword').value;
+        let bar = document.getElementById('strengthBar');
+        let text = document.getElementById('strengthText');
+        
+        let hasLen = password.length >= 8;
+        let hasNum = /\d/.test(password);
+        let hasSpec = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+        updateReq('req-len', hasLen);
+        updateReq('req-num', hasNum);
+        updateReq('req-spec', hasSpec);
+
+        let strength = (hasLen ? 1 : 0) + (hasNum ? 1 : 0) + (hasSpec ? 1 : 0);
+
+        if(strength === 0) { bar.style.width = '0%'; bar.className = 'progress-bar bg-danger'; text.innerText = 'Strength: Weak'; }
+        else if(strength === 1) { bar.style.width = '33%'; bar.className = 'progress-bar bg-danger'; text.innerText = 'Strength: Weak'; }
+        else if(strength === 2) { bar.style.width = '66%'; bar.className = 'progress-bar bg-warning'; text.innerText = 'Strength: Medium'; }
+        else if(strength === 3) { bar.style.width = '100%'; bar.className = 'progress-bar bg-success'; text.innerText = 'Strength: Strong'; }
+    }
+
+    function updateReq(id, isValid) {
+        let el = document.getElementById(id);
+        if(isValid) {
+            el.classList.remove('text-danger');
+            el.classList.add('text-success');
+            el.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + el.innerText.replace('✓', '').replace('At least', 'Met:');
+        } else {
+            el.classList.remove('text-success');
+            el.classList.add('text-danger');
+            el.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ' + el.innerText.replace('Met:', 'At least');
+        }
+    }
+</script>
+
+<style>
+    .letter-spacing-2 { letter-spacing: 4px; font-weight: bold; font-size: 1.2rem; text-align: center;}
+</style>
+{% endblock %}

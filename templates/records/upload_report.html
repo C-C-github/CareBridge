@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container py-4">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="mb-3">
+          {% if user.role == 'doctor' %}
+            <a href="{% url 'doctor_dashboard' %}" class="btn btn-white text-dark fw-bold rounded-pill shadow-sm px-4 py-2 border hover-lift">
+              <i class="fa-solid fa-arrow-left me-2"></i>Back to Doctor Dashboard
+            </a>
+          {% endif %}
+        </div>
+
+        <div class="card shadow-sm border-0 rounded-4">
+          <div class="card-header bg-white p-4 border-bottom">
+            <h5 class="fw-bold text-success mb-1">
+              <i class="fa-solid fa-file-medical me-2"></i>Upload Medical Report
+            </h5>
+            <small class="text-muted">
+              {% if user.role == 'doctor' and appointment %}
+                Patient: {{ appointment.patient.first_name }} {{ appointment.patient.last_name }}
+              {% endif %}
+            </small>
+          </div>
+
+          <div class="card-body p-4">
+            <form method="POST" enctype="multipart/form-data">
+              {% csrf_token %}
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Diagnosis</label>
+                {{ form.diagnosis }}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Symptoms</label>
+                {{ form.symptoms }}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Medications</label>
+                {{ form.medications }}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Lab Tests (Optional)</label>
+                {{ form.lab_tests }}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Doctor Notes</label>
+                {{ form.doctor_notes }}
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-semibold">Attach File (PDF/X-Ray)</label>
+                {{ form.attachment }}
+              </div>
+
+              <button type="submit" class="btn btn-success w-100 fw-bold py-2">Save Report</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

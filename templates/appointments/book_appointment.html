@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg overflow-hidden" style="border-radius: 20px;">
+                
+                <div class="card-header p-4 text-white position-relative" 
+                     style="background: linear-gradient(135deg, #009b4d 0%, #007a3d 100%);">
+                    <div class="position-relative z-1">
+                        <h4 class="fw-bold mb-1"><i class="fa-solid fa-calendar-check me-2"></i>Book Appointment</h4>
+                        <p class="mb-0 opacity-75 small">Schedule a visit with our specialists.</p>
+                    </div>
+                    <div class="position-absolute top-0 end-0 bg-white opacity-10 rounded-circle" 
+                         style="width: 150px; height: 150px; margin-top: -50px; margin-right: -50px;"></div>
+                </div>
+                
+                <div class="card-body p-5">
+                    
+                    {% if pre_selected_doctor_id %}
+                    <div class="alert alert-success border-0 bg-success-subtle text-success mb-4 rounded-3 d-flex align-items-center shadow-sm">
+                        <i class="fa-solid fa-circle-check fa-lg me-3"></i>
+                        <div>
+                            <strong>Match Found!</strong> We have pre-selected the best specialist for your symptoms.
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="mb-4">
+                        <a href="{% url 'symptom_check' %}" class="btn btn-outline-primary btn-sm rounded-pill w-100 py-2 border-dashed">
+                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i> Not sure whom to consult? <strong>Use AI Symptom Checker</strong>
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" id="bookingForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary small text-uppercase">
+                                <i class="fa-solid fa-user-doctor me-1 text-success"></i> Select Specialist
+                            </label>
+                            
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-light border-0"><i class="fa-solid fa-stethoscope text-muted"></i></span>
+                                
+                                <select name="doctor" id="doctorSelect" class="form-select form-select-lg bg-light border-0" required onchange="handleDoctorChange()">
+                                    <option value="" disabled {% if not pre_selected_doctor_id %}selected{% endif %}>Choose a Specialist...</option>
+                                    
+                                    {% for doctor in doctors %}
+                                        <option value="{{ doctor.id }}" 
+                                            {% if pre_selected_doctor_id and pre_selected_doctor_id|stringformat:"s" == doctor.id|stringformat:"s" %}selected{% endif %}>
+                                            
+                                            {% if doctor.id in user_favorites %}★ {% endif %}
+                                            Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }} — {{ doctor.specialization }}
+                                            {% if doctor.id in user_favorites %} (Favorite){% endif %}
+                                            
+                                        </option>
+                                    {% endfor %}
+                                </select>
+
+                                <button type="button" class="btn btn-light border-0" id="favBtn" disabled title="Add to Favorites">
+                                    <i class="fa-regular fa-heart text-secondary fa-lg" id="favIcon"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="form-text text-end small mt-1">
+                                Click <i class="fa-regular fa-heart"></i> to save/remove favorites.
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary small text-uppercase">
+                                <i class="fa-regular fa-calendar me-1 text-success"></i> Select Date
+                            </label>
+                            <input type="date" name="date" id="datePicker" class="form-control form-control-lg bg-light border-0 shadow-sm" required onchange="fetchSlots()">
+                            <small class="text-muted" style="font-size: 0.8rem;">* Past dates are disabled automatically.</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary small text-uppercase mb-2">
+                                <i class="fa-regular fa-clock me-1 text-success"></i> Available Time Slots
+                            </label>
+                            
+                            <input type="hidden" name="time" id="selectedTime" required>
+                            
+                            <div id="slotLoader" class="d-none text-primary small mb-2"><i class="fa-solid fa-spinner fa-spin me-1"></i> Checking doctor's availability...</div>
+
+                            <div class="row g-2">
+                                <div class="col-12 text-muted small fw-bold mb-1">Morning</div>
+                                <div class="col-4 col-md-3"><button type="button" class="btn btn-outline-success w-100 time-slot shadow-sm" data-value="09:00">09:00 AM</button></div>
+                                <div class="col-4 col-md-3"><button type="button" class="btn btn-outline-success w-100 time-slot shadow-sm" data-value="10:00">10:00 AM</button></div>
+                                <div class="col-4 col-md-3"><button type="button" class="btn btn-outline-success w-100 time-slot shadow-sm" data-value="11:00">11:00 AM</button></div>
+                                
+                                <div class="col-12 text-muted small fw-bold mb-1 mt-3">Afternoon</div>
+                                <div class="col-4 col-md-3"><button type="button" class="btn btn-outline-success w-100 time-slot shadow-sm" data-value="13:00">01:00 PM</button></div>
+                                <div class="col-4 col-md-3"><button type="button" class="btn btn-outline-success w-100 time-slot shadow-sm" data-value="14:00">02:00 PM</button></div>
+                                <div class="col-4 col-md-3"><button type="button" class="btn btn-outline-success w-100 time-slot shadow-sm" data-value="15:00">03:00 PM</button></div>
+                                <div class="col-4 col-md-3"><button type="button" class="btn btn-outline-success w-100 time-slot shadow-sm" data-value="16:00">04:00 PM</button></div>
+                            </div>
+                            <div id="timeError" class="text-danger small mt-2 d-none"><i class="fa-solid fa-circle-exclamation me-1"></i> Please select a time slot.</div>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label fw-bold text-secondary small text-uppercase">
+                                <i class="fa-solid fa-notes-medical me-1 text-success"></i> Reason for Visit
+                            </label>
+                            <textarea name="reason" class="form-control bg-light border-0 shadow-sm" rows="3" placeholder="Briefly describe your symptoms (e.g., fever, headache)..." required></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="{% url 'patient_dashboard' %}" class="btn btn-outline-secondary px-4 rounded-pill">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-5 py-2 shadow rounded-pill fw-bold" id="confirmBtn">
+                                Confirm Appointment <i class="fa-solid fa-paper-plane ms-2"></i>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. INITIALIZE FAVORITES (As Strings for robust matching)
+    const favoriteIds = new Set([
+        {% for id in user_favorites %}"{{ id }}",{% endfor %}
+    ]);
+
+    // --- FAVORITE LOGIC ---
+    function updateFavIcon() {
+        const select = document.getElementById('doctorSelect');
+        const favBtn = document.getElementById('favBtn');
+        const favIcon = document.getElementById('favIcon');
+        const docId = select.value;
+
+        if (!docId) {
+            favBtn.disabled = true;
+            return;
+        }
+        favBtn.disabled = false;
+
+        if (favoriteIds.has(docId)) {
+            favIcon.className = "fa-solid fa-heart text-danger fa-lg";
+        } else {
+            favIcon.className = "fa-regular fa-heart text-secondary fa-lg";
+        }
+    }
+
+    // Toggle Handler
+    document.getElementById('favBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        const select = document.getElementById('doctorSelect');
+        const docId = select.value;
+        if (!docId) return;
+
+        fetch(`/appointments/toggle-favorite/${docId}/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json'}
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const icon = document.getElementById('favIcon');
+                const option = select.options[select.selectedIndex];
+                let text = option.text;
+
+                if (data.liked) {
+                    favoriteIds.add(docId);
+                    icon.className = "fa-solid fa-heart text-danger fa-lg";
+                    if (!text.includes('★')) option.text = '★ ' + text + ' (Favorite)';
+                } else {
+                    favoriteIds.delete(docId);
+                    icon.className = "fa-regular fa-heart text-secondary fa-lg";
+                    option.text = text.replace('★ ', '').replace(' (Favorite)', '');
+                }
+            }
+        });
+    });
+
+    // --- SLOT LOCKING LOGIC ---
+    function fetchSlots() {
+        const docId = document.getElementById('doctorSelect').value;
+        const dateVal = document.getElementById('datePicker').value;
+        const loader = document.getElementById('slotLoader');
+        const slots = document.querySelectorAll('.time-slot');
+
+        // Reset all slots first
+        slots.forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('btn-secondary', 'text-decoration-line-through', 'opacity-50');
+            btn.classList.add('btn-outline-success');
+            btn.title = "Available";
+            // Deselect if locked previously
+            if(btn.classList.contains('active')) {
+               // Keep active unless locked (handled below)
+            }
+        });
+
+        if (!docId || !dateVal) return;
+
+        loader.classList.remove('d-none');
+
+        // Fetch Confirmed Slots
+        fetch(`/appointments/get-booked-slots/?doctor_id=${docId}&date=${dateVal}`)
+        .then(res => res.json())
+        .then(data => {
+            loader.classList.add('d-none');
+            const bookedTimes = data.slots; // ["09:00", "14:00"]
+
+            slots.forEach(btn => {
+                const timeVal = btn.getAttribute('data-value');
+                if (bookedTimes.includes(timeVal)) {
+                    // Lock Logic
+                    btn.disabled = true;
+                    btn.classList.remove('btn-outline-success', 'active', 'bg-success', 'text-white');
+                    btn.classList.add('btn-secondary', 'text-decoration-line-through', 'opacity-50');
+                    btn.title = "Already Booked";
+                    
+                    // Clear selection if user had selected this slot
+                    if(document.getElementById('selectedTime').value === timeVal) {
+                        document.getElementById('selectedTime').value = "";
+                    }
+                }
+            });
+        })
+        .catch(err => {
+            console.error(err);
+            loader.classList.add('d-none');
+        });
+    }
+
+    // Helper wrapper to run both logic updates
+    window.handleDoctorChange = function() {
+        updateFavIcon();
+        fetchSlots();
+    };
+
+    // --- INIT ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('datePicker');
+        dateInput.setAttribute('min', new Date().toISOString().split('T')[0]);
+
+        // Run on load (for pre-selected doctor)
+        updateFavIcon();
+        fetchSlots();
+
+        // Time Slot Click Handling
+        const timeSlots = document.querySelectorAll('.time-slot');
+        const hiddenTime = document.getElementById('selectedTime');
+        
+        timeSlots.forEach(s => s.addEventListener('click', function() {
+            timeSlots.forEach(b => { 
+                if(!b.disabled) {
+                    b.classList.remove('active', 'bg-success', 'text-white'); 
+                    b.classList.add('btn-outline-success'); 
+                }
+            });
+            this.classList.remove('btn-outline-success');
+            this.classList.add('active', 'bg-success', 'text-white');
+            hiddenTime.value = this.dataset.value;
+            document.getElementById('timeError').classList.add('d-none');
+        }));
+
+        document.getElementById('bookingForm').addEventListener('submit', function(e) {
+            if (!hiddenTime.value) {
+                e.preventDefault();
+                document.getElementById('timeError').classList.remove('d-none');
+                hiddenTime.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    });
+</script>
+
+<style>
+    .time-slot { transition: all 0.2s ease-in-out; font-weight: 500; }
+    .time-slot:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0, 155, 77, 0.2); }
+    .form-control:focus, .form-select:focus { border: 2px solid #009b4d; box-shadow: none; background-color: #fff !important; }
+    .border-dashed { border-style: dashed !important; border-width: 2px; }
+</style>
+{% endblock %}

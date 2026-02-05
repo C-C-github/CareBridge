@@ -1,0 +1,33 @@
+& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p
+123456789
+
+
+CREATE DATABASE IF NOT EXISTS healthcare_db
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'admin123';
+CREATE USER IF NOT EXISTS 'admin'@'127.0.0.1' IDENTIFIED BY 'admin123';
+
+GRANT ALL PRIVILEGES ON healthcare_db.* TO 'admin'@'localhost';
+GRANT ALL PRIVILEGES ON healthcare_db.* TO 'admin'@'127.0.0.1';
+
+FLUSH PRIVILEGES;
+EXIT;
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'healthcare_db',
+        'USER': 'admin',
+        'PASSWORD': 'admin123',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+    }
+}
+
+
+
+python manage.py makemigrations
+python manage.py migrate
+python manage.py runserver
