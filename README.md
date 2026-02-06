@@ -165,5 +165,4 @@ For a small clinic or hospital, this system offers a high Return on Investment (
 <a href="https://github.com/NivedhReddy2048">
   <img src="https://github.com/NivedhReddy2048.png" width="60px" style="border-radius:50%" title="Nivedh Reddy" />
 </a>
-
 </div>
