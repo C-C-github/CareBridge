@@ -3,7 +3,6 @@
 ## 📂 Project Structure
 
 Based on the source code analysis, the project is organized into modular Django applications handling specific domains of the healthcare system.
-
 ```text
 healthcare_project/
 ├── manage.py                # Django command-line utility
