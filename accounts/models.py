@@ -2,6 +2,14 @@ import uuid
 import random
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from cloudinary_storage.storage import MediaCloudinaryStorage
+from django.core.exceptions import ValidationError
+import os
+def validate_profile_image(value):
+    ext = os.path.splitext(value.name)[1].lower()
+    allowed_extensions = ['.jpg', '.jpeg', '.png']
+    if ext not in allowed_extensions:
+        raise ValidationError('Only JPG, JPEG, or PNG images are allowed.')
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
@@ -15,7 +23,14 @@ class CustomUser(AbstractUser):
     patient_id = models.CharField(max_length=10, unique=True, null=True, blank=True)
     
     is_verified = models.BooleanField(default=False)
-    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+    profile_picture = models.ImageField(
+    upload_to='profile_pics/',
+    storage=MediaCloudinaryStorage(),
+    validators=[validate_profile_image],
+    blank=True,
+    null=True
+)
+
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
 
