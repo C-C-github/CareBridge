@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from appointments.models import Appointment, Doctor
-
+from cloudinary_storage.storage import MediaCloudinaryStorage
 class MedicalReport(models.Model):
     # 1. Links (All set to NULL=True to bypass migration errors)
     appointment = models.OneToOneField(Appointment, on_delete=models.CASCADE, related_name='medical_report', null=True, blank=True)
@@ -18,8 +18,12 @@ class MedicalReport(models.Model):
     doctor_notes = models.TextField(blank=True, null=True, help_text="Additional advice")
     
     # 4. File Attachment
-    attachment = models.FileField(upload_to='reports/', blank=True, null=True, help_text="Upload Lab PDF or X-Ray")
-    
+    attachment = models.FileField(
+        upload_to='reports/',
+        storage=MediaCloudinaryStorage(),
+        blank=True,
+        null=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
