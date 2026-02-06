@@ -45,6 +45,21 @@ class Doctor(models.Model):
         ('Dentist', 'Dentist'),
         ('ENT', 'ENT Specialist'),
         ('Gynecologist', 'Gynecologist'),
+        ('Urologist', 'Urologist'),
+        ('Oncologist', 'Oncologist'),
+        ('Endocrinologist', 'Endocrinologist'),
+        ('Ophthalmologist', 'Ophthalmologist'),
+        ('Pulmonologist', 'Pulmonologist'),
+        ('Gastroenterologist', 'Gastroenterologist'),
+        ('Rheumatologist', 'Rheumatologist'),
+        ('Nephrologist', 'Nephrologist'),
+        ('Radiologist', 'Radiologist'),
+        ('Anesthesiologist', 'Anesthesiologist'),
+        ('General Surgeon', 'General Surgeon'),
+        ('ENT Surgeon', 'ENT Surgeon'),
+        ('Cardiothoracic Surgeon', 'Cardiothoracic Surgeon'),
+        ('Plastic Surgeon', 'Plastic Surgeon'),
+        ('Vascular Surgeon', 'Vascular Surgeon'),
     ]
     
     specialization = models.CharField(
