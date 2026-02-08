@@ -140,8 +140,9 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('BREVO_SMTP_LOGIN')
 EMAIL_HOST_PASSWORD = os.environ.get('BREVO_SMTP_KEY')
-DEFAULT_FROM_EMAIL = 'CareBridge <satkurikailash@gmail.com>'  # MUST be verified in Brevo
+DEFAULT_FROM_EMAIL = 'CareBridge <no-reply@carebridge.ml>'
 EMAIL_TIMEOUT = 10
+
 
 
 # ==============================
